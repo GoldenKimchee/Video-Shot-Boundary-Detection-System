@@ -3,6 +3,7 @@ class program:
         self.column_stds = []
         self.column_avgs = []
         self.intensity_code = []
+        self.frame_images = []
         
     
     # Intensity method
