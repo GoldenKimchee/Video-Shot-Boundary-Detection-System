@@ -16,6 +16,9 @@ class interface(Frame):
         self.program = program
         self.intenCode = []#program.get_intenCode()
         self.frame_imgs = [] #self.program.fetch_frame_imgs
+        self.frame_width = 500
+        self.frame_height = 400
+        self.populate_frame_imgs()
 
         # Create Main frame.
         self.mainFrame = Frame(master)
@@ -25,9 +28,8 @@ class interface(Frame):
         self.mainFrame.pack(fill='both', expand=True)
         
         # Create label that shows frames
-        img = Image.open('frame_imgs/img1.png')
-                       # width, height   
-        img = img.resize((500, 400), Image.ANTIALIAS)
+        img = Image.open('frame_imgs/default.png')
+        img = img.resize((self.frame_width, self.frame_height), Image.ANTIALIAS)
         self.chosen_frame = ImageTk.PhotoImage(img)
         self.frameLabel = Label(self.mainFrame, width=500, bg="black", image=self.chosen_frame)
         self.frameLabel.grid(column=1, row=0, sticky=NS, padx=10, pady=10)
@@ -54,14 +56,7 @@ class interface(Frame):
         # Button to press play to play the frame's corresponding shot
         self.play_button = Button(master, bg="gray", text="Play", fg="white", padx=8, pady=5)
         self.play_button.pack(side=BOTTOM, pady=8)
-        
-        # # Frame images
-        # #program.frame_images
-        # img_path = "../frame_imgs/img1.png"
-        # img = ImageTk.PhotoImage(Image.open(img_path))
-        # img_label = Label(image=img)
-        # img_label.pack()
-        # self.frame_imgs = ["../frame_imgs/img1.png"]
+    
         
     # Event "listener" for listbox change.
     def update_preview(self, event):
@@ -73,14 +68,11 @@ class interface(Frame):
     # a image that can be presented in tkinter
     def populate_frame_imgs(self):
         # Add each frame into self.frame_imgs
-        for infile in (glob.glob('../frame_imgs/*.png')):
+        for infile in (glob.glob('frame_imgs/*.png')):
             im = Image.open(infile)
 
-            # Resize the image for thumbnails.
-            imSize = im.size
-            x = int(imSize[0] / 4)
-            y = int(imSize[1] / 4)
-            imResize = im.resize((x, y), Image.ANTIALIAS)
+            # Resize to fit the frame
+            imResize = im.resize((self.frame_width, self.frame_height), Image.ANTIALIAS)
             photo = ImageTk.PhotoImage(imResize)
 
             # Add the images to the list.
