@@ -1,10 +1,30 @@
+import cv2
+
 class program:
     def __init__(self):
         self.column_stds = []
         self.column_avgs = []
         self.intensity_code = []
         self.frame_images = []
+        self.extract_frames()
         
+    # Populate frame_imgs folder with frames
+    def generate_frame_imgs(self):
+        pass
+    
+    # Extract frames from the video
+    def extract_frames(self):            
+        video_name = "20020924_juve_dk_02a.mpg" # Should have 14481 frames total
+        vidcap = cv2.VideoCapture(video_name)
+        success,image = vidcap.read()
+        count = 0
+        print("executing loop in extract_frames")
+        while success:
+            #cv2.imwrite("frame%d.jpg" % count, image)  # save frame as JPEG file      
+            success,image = vidcap.read()
+            count += 1
+        print(f'{count} frames have been read')
+    
     
     # Intensity method
     # Formula: I = 0.299R + 0.587G + 0.114B
@@ -106,18 +126,3 @@ class program:
     #     column_average = sum / 100
     #     column_avgs.append(column_average)
     # self.column_avgs = column_avgs
-
-
-
-    # #extract frames from video python
-    # #mp4 get all images frame by frame python
-    # import cv2
-    # video_name = "name.mp4" # or any other extension like .avi etc
-    # vidcap = cv2.VideoCapture(video_name)
-    # success,image = vidcap.read()
-    # count = 0
-    # while success:
-    # cv2.imwrite("frame%d.jpg" % count, image)     # save frame as JPEG file      
-    # success,image = vidcap.read()
-    # print('Read a new frame: ', success)
-    # count += 1

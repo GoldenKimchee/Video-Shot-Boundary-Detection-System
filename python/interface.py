@@ -4,20 +4,20 @@
 from tkinter import *
 from PIL import ImageTk, Image
 import glob, math, os
-import program
+from program import program
 
 # Main app.
 class interface(Frame):
-    # Constructor.
+    # Constructor
     def __init__(self, master):
 
         Frame.__init__(self, master)
         self.master = master
-        self.program = program
-        self.intenCode = []#program.get_intenCode()
-        self.frame_imgs = [] #self.program.fetch_frame_imgs
+        self.program = program()
         self.frame_width = 500
         self.frame_height = 400
+        self.frame_imgs = []
+        self.program.generate_frame_imgs()
         self.populate_frame_imgs()
 
         # Create Main frame.
