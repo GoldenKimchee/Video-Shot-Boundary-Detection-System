@@ -28,7 +28,7 @@ class interface(Frame):
         self.mainFrame.pack(fill='both', expand=True)
         
         # Create label that shows frames
-        img = Image.open('frame_imgs/default.png')
+        img = Image.open('default.jpg')
         img = img.resize((self.frame_width, self.frame_height), Image.ANTIALIAS)
         self.chosen_frame = ImageTk.PhotoImage(img)
         self.frameLabel = Label(self.mainFrame, width=500, bg="black", image=self.chosen_frame)
@@ -68,7 +68,7 @@ class interface(Frame):
     # a image that can be presented in tkinter
     def populate_frame_imgs(self):
         # Add each frame into self.frame_imgs
-        for infile in (glob.glob('frame_imgs/*.png')):
+        for infile in (glob.glob('frame_imgs/*.jpg')):
             im = Image.open(infile)
 
             # Resize to fit the frame
@@ -77,7 +77,7 @@ class interface(Frame):
 
             # Add the images to the list.
             self.frame_imgs.append(photo)
-
+  
 # Executable section.
 if __name__ == '__main__':
     root = Tk()

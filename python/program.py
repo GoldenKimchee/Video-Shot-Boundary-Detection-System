@@ -1,50 +1,85 @@
+from PIL import ImageTk, Image
 import cv2
+import os
 
 class program:
     def __init__(self):
+        self.resolution = 0
+        self.pil_imgs = []
         self.column_stds = []
         self.column_avgs = []
-        self.intensity_code = []
+        
+        # Array of arrays. Each array in intensity_bins is for each frame (#1,000 to #4,999)
+        # e.g. first array will have 25 bins (25 numbers in array) for frame #1,000
+        self.intensity_bins = []
+        
         self.frame_images = []
         self.extract_frames()
+        
         
     # Populate frame_imgs folder with frames
     def generate_frame_imgs(self):
         pass
-    
+        
+        
     # Extract frames from the video
-    def extract_frames(self):            
-        video_name = "20020924_juve_dk_02a.mpg" # Should have 14481 frames total
+    def extract_frames(self):
+        # Set up video frame extraction
+        print("Extracting frames...")     
+        video_name = "20020924_juve_dk_02a.mpg"
         vidcap = cv2.VideoCapture(video_name)
         success,image = vidcap.read()
-        count = 0
-        print("executing loop in extract_frames")
+        
+        # Real quick set resolution while we at it
+                # Frame's      width           height  
+        self.resolution = image.shape[1] * image.shape[0]
+        
+        count = 0 # First frame starts at 0
+        
+        # Locate frame_imgs folder to put frames in
+        dirname = os.path.dirname(__file__)
+        path = os.path.join(dirname, 'frame_imgs')
+        
         while success:
-            #cv2.imwrite("frame%d.jpg" % count, image)  # save frame as JPEG file      
+            # Analyze only frames #1,000 to #4,999
+            if (count == 1000):
+                filepath = os.path.join(path, "frame%d.jpg" % count)
+                cv2.imwrite(filepath, image)  # Save frame as JPEG file
+                
+                # Add in Image types of PIL module to process
+                img = Image.open(filepath)
+                self.pil_imgs.append(img)
+                
             success,image = vidcap.read()
             count += 1
+            if (count == 4999):
+                break
         print(f'{count} frames have been read')
     
     
+    # Get histogram value for 25 bins according to Intensity Method 
+    # Save this feature matrix to avoid future long wait times
     # Intensity method
     # Formula: I = 0.299R + 0.587G + 0.114B
     # 24-bit of RGB (8 bits for each color channel) color
     # intensities are transformed into a single 8-bit value.
     # There are 24 histogram bins.
-    def intensity_method(self, im, width, height, InBins):
-        total_pixels = width * height
-        InBins[0] = total_pixels
+    def intensity_method(self):
+        self.pil_imgs
+        self.intensity_bins
+        # Array of arrays. Each array in intensity_bins is for each frame (#1,000 to #4,999)
+        # e.g. first array will have 25 bins (25 numbers in array) for frame #1,000
+        self.intensity_bins = []
+        for y in range(height):  # reads pixels left to right, top down (by each row).
+            for x in range(width):  # This example code reads the RGB (red, green, blue) values
 
-        # for y in range(height):  # reads pixels left to right, top down (by each row).
-        #     for x in range(width):  # This example code reads the RGB (red, green, blue) values
+                r, g, b = im.getpixel((x, y))  # in every pixel of a 'x' pixel wide 'y' pixel tall image.
+                intensity = (0.299 * r) + (0.587 * g) + (0.114 * b)
+                bin = int((intensity + 10) // 10)  # Division rounds down to bin number.. in this case bins will range 0-24 (25 bins).
 
-        #         r, g, b = im.getpixel((x, y))  # in every pixel of a 'x' pixel wide 'y' pixel tall image.
-        #         intensity = (0.299 * r) + (0.587 * g) + (0.114 * b)
-        #         bin = int((intensity + 10) // 10)  # Division rounds down to bin number.. in this case bins will range 0-24 (25 bins).
-
-        #         if bin == 26:  # last bin is 240 to 255, so bin of 24 and 25 will
-        #             bin = 25  # correspond to bin 24, BUT +1 since first index stores total pixels.
-        #         InBins[bin] += 1  # allocate pixel to corresponding bin
+                if bin == 26:  # last bin is 240 to 255, so bin of 24 and 25 will
+                    bin = 25  # correspond to bin 24, BUT +1 since first index stores total pixels.
+                InBins[bin] += 1  # allocate pixel to corresponding bin
 
         return InBins
 
