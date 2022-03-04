@@ -15,20 +15,15 @@ class interface(Frame):
         self.frame_width = 500
         self.frame_height = 400
         self.frame_imgs = []
-        
-        convert = input("Convert from pre-existing frame images? This shortens load time. (y/n) ")
 
-        while True:
-            convert = convert.lower()
-            if (convert == "n"):
-                self.program.extract_frames()
-                break
-            elif (convert == "y"):
-                self.program.convert_to_pil_imgs()
-                break
-            convert = input("Please enter y or n ")
+        # Check for pre-exisiting frames. If there are no frames, it will generate them.
+        frames_present = self.check_frame_imgs()
         
-        print("Done with image conversions.")
+        # If there are frames present in frame_imgs, ask the user if they want to re-extract the
+        # frames or skip extraction.
+        if (frames_present):
+            self.ask_conversion()
+
         print("Now loading interface...")
 
         # Populate self.frame_imgs so they appear in Listbox
@@ -98,7 +93,42 @@ class interface(Frame):
 
             # Add the images to the list.
             self.frame_imgs.append(photo)
+
+    # Check if the 'frame_imgs' folder has any pre-existing frames
+    def check_frame_imgs(self):
+        # Locate frame_imgs folder that stores the frames
+        dirname = os.path.dirname(__file__)
+        path = os.path.join(dirname, 'frame_imgs')
+
+        # Getting the list of directories
+        dir = os.listdir(path)
   
+        # Checking if the list is empty or not
+        if len(dir) == 0:  
+            print("There are no pre-existing frame images.")
+            print("Frame images will now be extracted into 'frame_imgs' folder")
+
+            self.program.extract_frames()
+            return False
+
+        else:
+            return True
+    
+    def ask_conversion(self):
+        convert = input("Convert from pre-existing frame images? This shortens load time. (y/n) ")
+
+        while True:
+            convert = convert.lower()
+            if (convert == "n"):
+                self.program.extract_frames()
+                break
+            elif (convert == "y"):
+                self.program.convert_to_pil_imgs()
+                break
+            convert = input("Please enter y or n ")
+        
+        print("Done with image conversions.")
+
 # Executable section.
 if __name__ == '__main__':
     root = Tk()

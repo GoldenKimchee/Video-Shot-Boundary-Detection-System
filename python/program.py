@@ -63,7 +63,6 @@ class program:
         # 'count' variable would be here, but to make it less confusing put end_frame start_frame numbers instead
         # Add one since reading start and end frame inclusive 
         print(f'{self.end_frame - self.start_frame + 1} frames have been read')
-        print(f'PIL image array size is {len(self.pil_imgs)}')
 
 
     def convert_to_pil_imgs(self):
