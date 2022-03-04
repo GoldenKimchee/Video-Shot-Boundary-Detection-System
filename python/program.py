@@ -1,10 +1,14 @@
 from PIL import ImageTk, Image
 import cv2
 import os
+import glob
 
 class program:
     def __init__(self):
         self.resolution = 0
+        self.video_name = "20020924_juve_dk_02a.mpg"
+        self.start_frame = 1000
+        self.end_frame = 4999
         self.pil_imgs = []
         self.column_stds = []
         self.column_avgs = []
@@ -14,7 +18,6 @@ class program:
         self.intensity_bins = []
         
         self.frame_images = []
-        self.extract_frames()
         
         
     # Populate frame_imgs folder with frames
@@ -25,10 +28,9 @@ class program:
     # Extract frames from the video
     def extract_frames(self):
         # Set up video frame extraction
-        print("Extracting frames...")     
-        video_name = "20020924_juve_dk_02a.mpg"
-        vidcap = cv2.VideoCapture(video_name)
-        success,image = vidcap.read()
+        print("Extracting frames...")
+        vidcap = cv2.VideoCapture(self.video_name)
+        success, image = vidcap.read()
         
         # Real quick set resolution while we at it
                 # Frame's      width           height  
@@ -41,8 +43,11 @@ class program:
         path = os.path.join(dirname, 'frame_imgs')
         
         while success:
+            while count < self.start_frame:
+                success,image = vidcap.read()
+                count += 1
             # Analyze only frames #1,000 to #4,999
-            if (count == 1000):
+            if (count <= self.end_frame):
                 filepath = os.path.join(path, "frame%d.jpg" % count)
                 cv2.imwrite(filepath, image)  # Save frame as JPEG file
                 
@@ -50,13 +55,25 @@ class program:
                 img = Image.open(filepath)
                 self.pil_imgs.append(img)
                 
-            success,image = vidcap.read()
-            count += 1
-            if (count == 4999):
-                break
-        print(f'{count} frames have been read')
-    
-    
+                success,image = vidcap.read()
+                count += 1
+                continue
+            break
+
+        # 'count' variable would be here, but to make it less confusing put end_frame start_frame numbers instead
+        # Add one since reading start and end frame inclusive 
+        print(f'{self.end_frame - self.start_frame + 1} frames have been read')
+        print(f'PIL image array size is {len(self.pil_imgs)}')
+
+
+    def convert_to_pil_imgs(self):
+        # Convert frame .jpgs to Image types of PIL module to process
+        for infile in (glob.glob('frame_imgs/*.jpg')):
+            im = Image.open(infile)
+
+            # Add the images to the list.
+            self.pil_imgs.append(im)
+
     # Get histogram value for 25 bins according to Intensity Method 
     # Save this feature matrix to avoid future long wait times
     # Intensity method

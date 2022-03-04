@@ -11,14 +11,35 @@ class interface(Frame):
     # Constructor
     def __init__(self, master):
 
-        Frame.__init__(self, master)
-        self.master = master
         self.program = program()
         self.frame_width = 500
         self.frame_height = 400
         self.frame_imgs = []
-        self.program.generate_frame_imgs()
+        
+        convert = input("Convert from pre-existing frame images? This shortens load time. (y/n) ")
+
+        while True:
+            convert = convert.lower()
+            if (convert == "n"):
+                self.program.extract_frames()
+                break
+            elif (convert == "y"):
+                self.program.convert_to_pil_imgs()
+                break
+            convert = input("Please enter y or n ")
+        
+        print("Done with image conversions.")
+        print("Now loading interface...")
+
+        # Populate self.frame_imgs so they appear in Listbox
         self.populate_frame_imgs()
+
+        # Generate cut's start and end frames 
+        self.program.generate_frame_imgs()
+
+        # Generate window
+        Frame.__init__(self, master)
+        self.master = master
 
         # Create Main frame.
         self.mainFrame = Frame(master)
@@ -83,7 +104,7 @@ if __name__ == '__main__':
     root = Tk()
     root.title('Video Shot Boundary Detection App')
     root.resizable(0, 0)
-    
+
     imageViewer = interface(root)
 
     root.mainloop()
