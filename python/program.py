@@ -1,21 +1,29 @@
+from asyncio.windows_events import NULL
+from contextlib import nullcontext
 from PIL import ImageTk, Image
 import cv2
 import os
 import glob
+import numpy as np
 
 class program:
     def __init__(self):
-        self.resolution = 0
         self.video_name = "20020924_juve_dk_02a.mpg"
+        self.resolution = 0
+        self.frame_width = 0
+        self.frame_height = 0
+        self.save_to_file([1, 2], "arr")
+        self.read_from_file("arr")
         self.start_frame = 1000
         self.end_frame = 4999
+        
         self.pil_imgs = []
         self.column_stds = []
         self.column_avgs = []
         
         # Array of arrays. Each array in intensity_bins is for each frame (#1,000 to #4,999)
         # e.g. first array will have 25 bins (25 numbers in array) for frame #1,000
-        self.intensity_bins = []
+        self.intensity_bins = np.array([])
         
         self.frame_images = []
         
@@ -33,8 +41,9 @@ class program:
         success, image = vidcap.read()
         
         # Real quick set resolution while we at it
-                # Frame's      width           height  
-        self.resolution = image.shape[1] * image.shape[0]
+        self.frame_width = image.shape[1]
+        self.frame_height = image.shape[0] 
+        self.resolution = self.frame_width * self.frame_height
         
         count = 0 # First frame starts at 0
         
@@ -73,32 +82,63 @@ class program:
             # Add the images to the list.
             self.pil_imgs.append(im)
 
-    # Get histogram value for 25 bins according to Intensity Method 
-    # Save this feature matrix to avoid future long wait times
+
     # Intensity method
     # Formula: I = 0.299R + 0.587G + 0.114B
     # 24-bit of RGB (8 bits for each color channel) color
     # intensities are transformed into a single 8-bit value.
-    # There are 24 histogram bins.
+    # There are 25 histogram bins, bin 0 to bin 24.
     def intensity_method(self):
-        self.pil_imgs
-        self.intensity_bins
         # Array of arrays. Each array in intensity_bins is for each frame (#1,000 to #4,999)
         # e.g. first array will have 25 bins (25 numbers in array) for frame #1,000
-        self.intensity_bins = []
-        for y in range(height):  # reads pixels left to right, top down (by each row).
-            for x in range(width):  # This example code reads the RGB (red, green, blue) values
+        for img_index in range(len(self.pil_imgs)):
+            
+            self.intensity_bins.append([0]*25)  # Add array that stores 25 bins for each image
+            img = self.pil_img[img_index]
+            
+            for y in range(self.frame_height):  # reads pixels left to right, top down (by each row).
+                
+                for x in range(self.frame_width):  # This example code reads the RGB (red, green, blue) values
 
-                r, g, b = im.getpixel((x, y))  # in every pixel of a 'x' pixel wide 'y' pixel tall image.
-                intensity = (0.299 * r) + (0.587 * g) + (0.114 * b)
-                bin = int((intensity + 10) // 10)  # Division rounds down to bin number.. in this case bins will range 0-24 (25 bins).
+                    r, g, b = img.getpixel((x, y))  # in every pixel of a 'x' pixel wide 'y' pixel tall image.
+                    intensity = (0.299 * r) + (0.587 * g) + (0.114 * b)
+                    bin = int(intensity // 10)  # Division rounds down to bin number.. in this case bins will range 0-24 (25 bins).
 
-                if bin == 26:  # last bin is 240 to 255, so bin of 24 and 25 will
-                    bin = 25  # correspond to bin 24, BUT +1 since first index stores total pixels.
-                InBins[bin] += 1  # allocate pixel to corresponding bin
+                    if bin == 25:  # last bin is 240 to 255, so bin of 24 and 25 will be
+                        bin = 24  # combined to correspond to bin 24
+                    self.intensity_bins[img_index][bin] += 1  # allocate pixel to corresponding bin
 
-        return InBins
+        #self.save_to_file(self.intensity_bins, "intensity_bins")
+        return self.intensity_bins
 
+
+    def save_to_file(self, data, file_name):
+        try:
+            file = open(file_name, "wb") # open a binary file in write mode
+            np.save(file, data) # save data to the file
+            
+        except Exception:
+            print("Something went wrong: " + str(Exception))
+        
+        finally:
+            file.close
+    
+    
+    def read_from_file(self, file_name):
+        data = None
+        
+        try:
+            file = open(file_name, "rb") # open the file in read binary mode
+            data = np.load(file) # read the file to numpy array
+            
+        except Exception:
+            print("Something went wrong: " + str(Exception))
+            
+        finally:
+            file.close
+            return data
+            
+            
     # Find the Manhattan Distance of each image and return a
     # list of distances between image i and each image in the
     # directory uses, the comparison method of the passed

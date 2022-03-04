@@ -148,7 +148,6 @@ class PixInfo:
     # intensities are transformed into a single 8-bit value.
     # There are 24 histogram bins.
     def intensity_method(self, im, width, height, InBins):
-        print(im)
         total_pixels = width * height
         InBins[0] = total_pixels
 
