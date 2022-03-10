@@ -23,12 +23,15 @@ class interface(Frame):
         # frames or skip extraction.
         if (frames_present):
             self.ask_conversion()
+        
+        # Ask user how intensity bins should be loaded
+        self.program.ask_intensity_bins()
 
         print("Now loading interface...")
 
         # Populate self.frame_imgs so they appear in Listbox
         self.populate_frame_imgs()
-
+        
         # Generate cut's start and end frames 
         self.program.generate_frame_imgs()
 
@@ -115,15 +118,17 @@ class interface(Frame):
             return True
     
     def ask_conversion(self):
-        convert = input("Convert from pre-existing frame images? This shortens load time. (y/n) ")
+        convert = input("Convert from pre-existing frame images? (y/n) ")
 
         while True:
             convert = convert.lower()
             if (convert == "n"):
                 self.program.extract_frames()
+                self.program.get_dimensions()
                 break
             elif (convert == "y"):
                 self.program.convert_to_pil_imgs()
+                self.program.get_dimensions
                 break
             convert = input("Please enter y or n ")
         

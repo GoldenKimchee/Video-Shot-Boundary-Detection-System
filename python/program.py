@@ -31,7 +31,34 @@ class program:
     # Populate frame_imgs folder with frames
     def generate_frame_imgs(self):
         pass
+    
+    # Ask user to load or generate intensity bins, and use appropriate function accordingly
+    def ask_intensity_bins(self):
+        generate = input("Load pre-existing intensity bins? (y/n) ")
+        while True:
+            generate = generate.lower()
+            if (generate == "n"):
+                self.generate_intensity_bins()
+                break
+            elif (generate == "y"):
+                self.intensity_bins = self.load_intensity_bins()
+                self.intensity_bins = np.array(self.intensity_bins).tolist()
+                break
+            generate = input("Please enter y or n ")
+        print("Intensity bins successfully populated.")
+        print(self.intensity_bins)
+            
+    def load_intensity_bins(self):
+        return self.read_from_file("intensity_bins")
+    
+    def get_dimensions(self):
+        vidcap = cv2.VideoCapture(self.video_name)
+        success, image = vidcap.read()
         
+        # Real quick set resolution while we at it
+        self.frame_width = image.shape[1]
+        self.frame_height = image.shape[0] 
+        self.resolution = self.frame_width * self.frame_height
         
     # Extract frames from the video
     def extract_frames(self):
@@ -88,16 +115,17 @@ class program:
     # 24-bit of RGB (8 bits for each color channel) color
     # intensities are transformed into a single 8-bit value.
     # There are 25 histogram bins, bin 0 to bin 24.
-    def intensity_method(self):
+    def generate_intensity_bins(self):
+        # Make sure it is a python array instead of a numpy array
+        self.intensity_bins = np.array(self.intensity_bins).tolist()
+        
         # Array of arrays. Each array in intensity_bins is for each frame (#1,000 to #4,999)
         # e.g. first array will have 25 bins (25 numbers in array) for frame #1,000
         for img_index in range(len(self.pil_imgs)):
-            
-            self.intensity_bins.append([0]*25)  # Add array that stores 25 bins for each image
-            img = self.pil_img[img_index]
+            self.intensity_bins.append([0]*25) # Add array that stores 25 bins for each image
+            img = self.pil_imgs[img_index]
             
             for y in range(self.frame_height):  # reads pixels left to right, top down (by each row).
-                
                 for x in range(self.frame_width):  # This example code reads the RGB (red, green, blue) values
 
                     r, g, b = img.getpixel((x, y))  # in every pixel of a 'x' pixel wide 'y' pixel tall image.
@@ -108,7 +136,8 @@ class program:
                         bin = 24  # combined to correspond to bin 24
                     self.intensity_bins[img_index][bin] += 1  # allocate pixel to corresponding bin
 
-        #self.save_to_file(self.intensity_bins, "intensity_bins")
+        self.save_to_file(self.intensity_bins, "intensity_bins")
+        print(self.intensity_bins)
         return self.intensity_bins
 
 
