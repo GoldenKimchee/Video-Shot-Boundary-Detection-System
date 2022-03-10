@@ -10,10 +10,8 @@ class program:
     def __init__(self):
         self.video_name = "20020924_juve_dk_02a.mpg"
         self.resolution = 0
-        self.frame_width = 0
-        self.frame_height = 0
-        self.save_to_file([1, 2], "arr")
-        self.read_from_file("arr")
+        self.frame_width = 352
+        self.frame_height = 288
         self.start_frame = 1000
         self.end_frame = 4999
         
@@ -25,8 +23,14 @@ class program:
         # e.g. first array will have 25 bins (25 numbers in array) for frame #1,000
         self.intensity_bins = np.array([])
         
-        self.frame_images = []
+        self.sd_array = []
+        self.tb = 0
+        self.ts = 0
+        self.tor = 2
+        self.frame_results = {"cs" : [], "ce" : [],
+                             "fs" : [], "fe" : []}
         
+        self.frame_images = []
         
     # Populate frame_imgs folder with frames
     def generate_frame_imgs(self):
@@ -46,8 +50,10 @@ class program:
                 break
             generate = input("Please enter y or n ")
         print("Intensity bins successfully populated.")
-        print(self.intensity_bins)
-            
+        
+        print("Last image's intensity bins:")
+        print(self.intensity_bins[-1])
+        
     def load_intensity_bins(self):
         return self.read_from_file("intensity_bins")
     
@@ -122,9 +128,9 @@ class program:
         # Array of arrays. Each array in intensity_bins is for each frame (#1,000 to #4,999)
         # e.g. first array will have 25 bins (25 numbers in array) for frame #1,000
         for img_index in range(len(self.pil_imgs)):
+            print(f"Processing {img_index} image")
             self.intensity_bins.append([0]*25) # Add array that stores 25 bins for each image
             img = self.pil_imgs[img_index]
-            
             for y in range(self.frame_height):  # reads pixels left to right, top down (by each row).
                 for x in range(self.frame_width):  # This example code reads the RGB (red, green, blue) values
 
@@ -136,8 +142,12 @@ class program:
                         bin = 24  # combined to correspond to bin 24
                     self.intensity_bins[img_index][bin] += 1  # allocate pixel to corresponding bin
 
+        # Turn back to numpy array to save results
+        self.intensity_bins = np.asarray(self.intensity_bins, dtype=np.int32)
+        
+        # Save results to file
         self.save_to_file(self.intensity_bins, "intensity_bins")
-        print(self.intensity_bins)
+        
         return self.intensity_bins
 
 
@@ -166,83 +176,71 @@ class program:
         finally:
             file.close
             return data
+        
+    # Get frame to frame difference to generate SD's
+    def generate_sd(self):
+        # Iterate through bins, comparing adjacent frame bins
+        for i in range(len(self.intensity_bins) - 1):
+            first_bins = self.intensity_bins[i]
+            second_bins = self.intensity_bins[i + 1]
+            sd_total = 0
+            for j in range(25):
+                difference = abs(first_bins[j] - second_bins[j])
+                sd_total += difference
+            self.sd_array.append(sd_total)
+        print("SD values successfully generated.")
+        print(f"Length of SD array is {len(self.sd_array)}")
+
+
+    # Set threshold values to compare SD values in twin-comparison based approach
+    def set_thresholds(self):
+        self.sd_array = np.asarray(self.sd_array, dtype=np.int32)
+        
+        # For gradual transition
+        self.ts = np.mean(self.sd_array) * 2
+        
+        # For cut
+        self.tb = np.mean(self.sd_array) + np.std(self.sd_array) * 11
+        
+        print(f"Ts = {self.ts}  Tb = {self.tb}")
+        
+        
+    # Use twin-comparison based method to find start and end frames of a cut/gradual transition
+    def find_frames(self):
+        # Variables for cut
+        cs = 0  # start of cut
+        ce = 0  # end of cut
+        
+        # Variables for gradual transition
+        fs = 0  # start of transition
+        fe = 0  # end of transition
+        
+        # Variables for potential transition
+        fs_candi = 0  # start of transition
+        fe_candi = 0  # end of transition
+        
+        skip = 0
+        
+        for frame_ind in range(len(self.sd_array)):
             
+            # Skip frames we have already visited (from checking potential transition)
+            if skip > 0:
+                skip -= 1
+                continue
             
-    # Find the Manhattan Distance of each image and return a
-    # list of distances between image i and each image in the
-    # directory uses, the comparison method of the passed
-    # binList
-
-    # the "method" argument can have one of the two following values(as strings):
-    # color_code_method
-    # intensity_method
-    def find_distance(self, method):
-        # "chosen_image_index" is the index of the chosen image in the
-        # image list
-        chosen_image_index = int(str(self.chosen_image)[7:]) - 1
-        weights = []
-        bins_to_compare = []
-        if method == "intensity_method":
-            bins_to_compare = self.intensity_code
-            for i in range(89):
-                weights.append(1)
-
-        # now apply the manhattan distance technique,
-        # compute the distance between the chosen index image
-        # and all other images
-        chosen_image_bin = bins_to_compare[chosen_image_index]
-
-        # print("chosen image bin: " + str(chosen_image_bin))
-        image_info = []
-        for i in range(len(bins_to_compare)):
-            other_image_bin = bins_to_compare[i]
-            other_image_img = self.photoList[i]
-            other_image_file = self.fileList[i]  # all the images file name
-
-            manhattan_distance = 0
-            if (i != chosen_image_index):
-                #NO NEED DIVIDE BY IMG SIZE SINCE ALL FRAMES HAVE SAME RESOLUTION1!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                chosen_image_size = self.image_sizes[chosen_image_index]
-                other_image_size = self.image_sizes[i]
-                # iterate through the items in each bin
-                for j in range(len(chosen_image_bin)):
-                    chosen_image_bin_value = chosen_image_bin[j]
-                    other_image_bin_value = other_image_bin[j]
-                    manhattan_distance += weights[j] * abs(chosen_image_bin_value / chosen_image_size
-                                                                    - other_image_bin_value / other_image_size)
-
-            # tuple of the form (image, image file name, manhattan distance)
-            info = (other_image_img, other_image_file, manhattan_distance)
-            image_info.append(info)
-
-        # sort the image info by their manhattan distances
-        image_info.sort(key=lambda x: x[2])
-        self.put_sorted_images_in_pages_array(image_info)
-        self.update_results()
-
-        return image_info
-
-    # # Calculate each column's standard deviation
-    # column_stds = []  # standard deviation for each column (index 0 number is std of first column)
-    # for i in range(89):
-    #     std_sum = 0
-    #     for j in range(100):
-    #         std_for_column = ((all_features[j][i] - column_avgs[i]) ** 2) / (100 - 1)
-    #         std_sum += std_for_column
-    #     column_std = std_sum ** 0.5  # column_std = math.sqrt(std_sum)
-    #     column_stds.append(column_std)
-    #     # std = square root of ( ( (each column's cell number - column's average)^2 / total number of cells in column ) + do for the rest.. its summation )
-    # self.column_stds = column_stds
-
-
-
-
-    # column_avgs = []  # average of each column (index 0 number is the average of first column)
-    # # Calculate each column's average
-    # for i in range(89):  # go through each bin in column order
-    #     sum = 0
-    #     for j in range(100):
-    #         sum += all_features[j][i]
-    #     column_average = sum / 100
-    #     column_avgs.append(column_average)
-    # self.column_avgs = column_avgs
+            # Meeting this condition means its a cut
+            if self.sd_array[frame_ind] >= self.tb:
+                cs = frame_ind
+                ce = frame_ind + 1
+                
+                # Store cut frames in results
+                self.frame_results["cs"] = self.frame_results["cs"].append(cs)
+                self.frame_results["ce"] = self.frame_results["ce"].append(ce)
+                
+            # Meeting this condition means it is potentially a gradual transition
+            if self.ts <= self.sd_array[frame_ind] < self.tb:
+                fs_candi = frame_ind
+                for after_frame_ind in range(frame_ind + 1, len(self.sd_array)):
+                    
+# self.frame_results = {"cs" : [], "ce" : [],
+#             "fs" : [], "fe" : []}

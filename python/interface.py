@@ -26,6 +26,12 @@ class interface(Frame):
         
         # Ask user how intensity bins should be loaded
         self.program.ask_intensity_bins()
+        
+        # Generate SD values
+        self.program.generate_sd()
+        
+        # Calculate thresholds from SD values
+        self.program.set_thresholds()
 
         print("Now loading interface...")
 
@@ -118,7 +124,7 @@ class interface(Frame):
             return True
     
     def ask_conversion(self):
-        convert = input("Convert from pre-existing frame images? (y/n) ")
+        convert = input("Convert from pre-existing frames? (y/n) ")
 
         while True:
             convert = convert.lower()
