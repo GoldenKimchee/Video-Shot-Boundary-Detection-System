@@ -28,7 +28,7 @@ class program:
         self.ts = 0
         self.tor = 2
         self.frame_results = {"cs" : [], "ce" : [],
-                             "fs" : [], "fe" : []}
+                             "fs + 1" : [], "fe" : []}
         
         self.frame_images = []
         
@@ -50,9 +50,7 @@ class program:
                 break
             generate = input("Please enter y or n ")
         print("Intensity bins successfully populated.")
-        
-        print("Last image's intensity bins:")
-        print(self.intensity_bins[-1])
+
         
     def load_intensity_bins(self):
         return self.read_from_file("intensity_bins")
@@ -220,80 +218,91 @@ class program:
         fs_candi = 0  # start of transition
         fe_candi = 0  # end of transition
         
-        skip = 0
+        skip_to_frame = 0
         
         for frame_ind in range(len(self.sd_array)):
             
             # Skip frames we have already visited (from checking potential transition)
-            if skip > 0:
-                skip -= 1
+            if frame_ind <= skip_to_frame:
                 continue
             
             # Meeting this condition means its a cut
             if self.sd_array[frame_ind] >= self.tb:
                 cs = frame_ind
                 ce = frame_ind + 1
-                print(f"ce is: {ce}") # HELP! ce is 1000 less than it should be
                 
                 # Store cut frames in results
-                self.frame_results["cs"].append(cs)
-                self.frame_results["ce"].append(ce)
+                self.frame_results["cs"].append(cs + self.start_frame)
+                self.frame_results["ce"].append(ce + self.start_frame)
                 
-                skip = 1
-                
-                continue
+                skip_to_frame = ce
                 
             # Meeting this condition means it is potentially a gradual transition
-            if self.ts <= self.sd_array[frame_ind] < self.tb:
+            elif self.ts <= self.sd_array[frame_ind] < self.tb:
                 fs_candi = frame_ind
                 
                 for after_frame_ind in range(frame_ind + 1, len(self.sd_array)):
                     
-                    # Next SD is above gradual transition (self.ts) threshold
+                    # Next SD is above gradual transition threshold but below cut threshold
                     if self.ts <= self.sd_array[after_frame_ind] < self.tb:
+                        tor = 0
                         continue
                     
-                    # Next SD is below gradual transition (self.ts) threshold
+                    # Next SD is below gradual transition threshold
                     elif self.sd_array[after_frame_ind] < self.ts:
                         tor += 1
                         if tor == 2:  # Two consecutive SD's below self.ts
                             fe_candi = after_frame_ind - 2
                             
                             self.summation(fs_candi, fe_candi)
-                            skip = fs_candi - fe_candi  # Skip the frames we processed
+                            skip_to_frame = fe_candi # Skip the frames we processed
+                            tor = 0  # Reset tor
+                            
                             break
+                        
+                        continue
                     
                     # Next SD equals cut (self.tb) threshold
                     elif self.sd_array[after_frame_ind] >= self.tb:
+                        tor = 0
                         fe_candi = after_frame_ind - 1
                         
                         self.summation(fs_candi, fe_candi)
-                        skip = fs_candi - fe_candi  # Skip the frames we processed
+                        skip_to_frame = fe_candi  # Skip the frames we processed
                         break
 
                     
     def summation(self, fs_candi, fe_candi):
         sd_total = 0
+        
+        
+        # If transition starts and ends at same frame don't add
+        if fs_candi == fe_candi:
+            return
+            
         # Summation of the candidate range 
-        for sd_ind in range(fs_candi, fe_candi + 1):
-            sd_total += self.sd_array[sd_ind]
+        else:
+            for sd_ind in range(fs_candi, fe_candi + 1):
+                sd_total += self.sd_array[sd_ind]
+
         # Summation meets cut threshold, they are real start and end frames
         if sd_total >= self.tb:
             fs = fs_candi
             fe = fe_candi
-            print(f"fs is: {fs + 1}") # HELP! fs is off by 1000 and most values are consecutive wrong ones..
-            self.frame_results["fs"].append(fs)
-            self.frame_results["fe"].append(fe)
+            self.frame_results["fs + 1"].append(fs + 1 + self.start_frame)
+            self.frame_results["fe"].append(fe + self.start_frame)
         # else, the candidate section is dropped
         
         
     def frame_sets(self):
-        print("Cuts:")
+        print("Cuts (cs, ce):")
         for num in range(len(self.frame_results["cs"])):
             cut = (self.frame_results["cs"][num], self.frame_results["ce"][num])
             print(str(cut) + "\t", end="")
+        print()
             
-        print("Gradual Transitions:")
-        for num in range(len(self.frame_results["fs"])):
-            transition = (self.frame_results["fs"][num], self.frame_results["fe"][num])
+        print("Gradual Transitions (fs + 1, fe):")
+        for num in range(len(self.frame_results["fs + 1"])):
+            transition = (self.frame_results["fs + 1"][num], self.frame_results["fe"][num])
             print(str(transition) + "\t", end="")
+        print()
