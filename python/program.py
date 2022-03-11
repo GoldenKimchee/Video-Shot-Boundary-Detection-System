@@ -214,6 +214,7 @@ class program:
         # Variables for gradual transition
         fs = 0  # start of transition
         fe = 0  # end of transition
+        tor = 0  # keep track of consecutive SD's that are less than self.ts
         
         # Variables for potential transition
         fs_candi = 0  # start of transition
@@ -232,15 +233,67 @@ class program:
             if self.sd_array[frame_ind] >= self.tb:
                 cs = frame_ind
                 ce = frame_ind + 1
+                print(f"ce is: {ce}") # HELP! ce is 1000 less than it should be
                 
                 # Store cut frames in results
-                self.frame_results["cs"] = self.frame_results["cs"].append(cs)
-                self.frame_results["ce"] = self.frame_results["ce"].append(ce)
+                self.frame_results["cs"].append(cs)
+                self.frame_results["ce"].append(ce)
+                
+                skip = 1
+                
+                continue
                 
             # Meeting this condition means it is potentially a gradual transition
             if self.ts <= self.sd_array[frame_ind] < self.tb:
                 fs_candi = frame_ind
+                
                 for after_frame_ind in range(frame_ind + 1, len(self.sd_array)):
                     
-# self.frame_results = {"cs" : [], "ce" : [],
-#             "fs" : [], "fe" : []}
+                    # Next SD is above gradual transition (self.ts) threshold
+                    if self.ts <= self.sd_array[after_frame_ind] < self.tb:
+                        continue
+                    
+                    # Next SD is below gradual transition (self.ts) threshold
+                    elif self.sd_array[after_frame_ind] < self.ts:
+                        tor += 1
+                        if tor == 2:  # Two consecutive SD's below self.ts
+                            fe_candi = after_frame_ind - 2
+                            
+                            self.summation(fs_candi, fe_candi)
+                            skip = fs_candi - fe_candi  # Skip the frames we processed
+                            break
+                    
+                    # Next SD equals cut (self.tb) threshold
+                    elif self.sd_array[after_frame_ind] >= self.tb:
+                        fe_candi = after_frame_ind - 1
+                        
+                        self.summation(fs_candi, fe_candi)
+                        skip = fs_candi - fe_candi  # Skip the frames we processed
+                        break
+
+                    
+    def summation(self, fs_candi, fe_candi):
+        sd_total = 0
+        # Summation of the candidate range 
+        for sd_ind in range(fs_candi, fe_candi + 1):
+            sd_total += self.sd_array[sd_ind]
+        # Summation meets cut threshold, they are real start and end frames
+        if sd_total >= self.tb:
+            fs = fs_candi
+            fe = fe_candi
+            print(f"fs is: {fs + 1}") # HELP! fs is off by 1000 and most values are consecutive wrong ones..
+            self.frame_results["fs"].append(fs)
+            self.frame_results["fe"].append(fe)
+        # else, the candidate section is dropped
+        
+        
+    def frame_sets(self):
+        print("Cuts:")
+        for num in range(len(self.frame_results["cs"])):
+            cut = (self.frame_results["cs"][num], self.frame_results["ce"][num])
+            print(str(cut) + "\t", end="")
+            
+        print("Gradual Transitions:")
+        for num in range(len(self.frame_results["fs"])):
+            transition = (self.frame_results["fs"][num], self.frame_results["fe"][num])
+            print(str(transition) + "\t", end="")

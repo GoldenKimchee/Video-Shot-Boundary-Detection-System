@@ -32,6 +32,12 @@ class interface(Frame):
         
         # Calculate thresholds from SD values
         self.program.set_thresholds()
+        
+        # Calculate start and end frames with Twin-comparison based approach
+        self.program.find_frames()
+        
+        # Print the sets of (Cs, Ce) and (Fs, Fe).
+        self.program.frame_sets()
 
         print("Now loading interface...")
 
