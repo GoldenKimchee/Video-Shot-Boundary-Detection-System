@@ -28,7 +28,7 @@ class program:
         self.ts = 0
         self.tor = 2
         self.frame_results = {"cs" : [], "ce" : [],
-                             "fs + 1" : [], "fe" : []}
+                             "fs" : [], "fe" : []}
         
         self.frame_images = []
         
@@ -120,26 +120,27 @@ class program:
     # intensities are transformed into a single 8-bit value.
     # There are 25 histogram bins, bin 0 to bin 24.
     def generate_intensity_bins(self):
-        # Make sure it is a python array instead of a numpy array
-        self.intensity_bins = np.array(self.intensity_bins).tolist()
         
         # Array of arrays. Each array in intensity_bins is for each frame (#1,000 to #4,999)
         # e.g. first array will have 25 bins (25 numbers in array) for frame #1,000
         for img_index in range(len(self.pil_imgs)):
             print(f"Processing {img_index} image")
-            self.intensity_bins.append([0]*25) # Add array that stores 25 bins for each image
             img = self.pil_imgs[img_index]
+            img_bins = np.array([])
             for y in range(self.frame_height):  # reads pixels left to right, top down (by each row).
                 for x in range(self.frame_width):  # This example code reads the RGB (red, green, blue) values
 
                     r, g, b = img.getpixel((x, y))  # in every pixel of a 'x' pixel wide 'y' pixel tall image.
                     intensity = (0.299 * r) + (0.587 * g) + (0.114 * b)
-                    bin = int(intensity // 10)  # Division rounds down to bin number.. in this case bins will range 0-24 (25 bins).
+                    img_bins.append(img_bins, intensity)
 
                     if bin == 25:  # last bin is 240 to 255, so bin of 24 and 25 will be
                         bin = 24  # combined to correspond to bin 24
                     self.intensity_bins[img_index][bin] += 1  # allocate pixel to corresponding bin
-
+            hist = np.histogram(img_bins, bins=[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100,
+                                                      110, 120, 130, 140, 150, 160, 170, 180, 190,
+                                                      200, 210, 220, 230, 240, 255])
+            np.concatenate((self.intensity_bins, hist))
         # Turn back to numpy array to save results
         self.intensity_bins = np.asarray(self.intensity_bins, dtype=np.int32)
         
@@ -276,9 +277,8 @@ class program:
         sd_total = 0
         
         
-        # If transition starts and ends at same frame don't add
-        if fs_candi == fe_candi:
-            return
+        if fs_candi == 3298:
+            print(self.sd_array[fs_candi])
             
         # Summation of the candidate range 
         else:
@@ -289,7 +289,7 @@ class program:
         if sd_total >= self.tb:
             fs = fs_candi
             fe = fe_candi
-            self.frame_results["fs + 1"].append(fs + 1 + self.start_frame)
+            self.frame_results["fs"].append(fs + self.start_frame)
             self.frame_results["fe"].append(fe + self.start_frame)
         # else, the candidate section is dropped
         
@@ -301,8 +301,8 @@ class program:
             print(str(cut) + "\t", end="")
         print()
             
-        print("Gradual Transitions (fs + 1, fe):")
-        for num in range(len(self.frame_results["fs + 1"])):
-            transition = (self.frame_results["fs + 1"][num], self.frame_results["fe"][num])
+        print("Gradual Transitions (fs, fe):")
+        for num in range(len(self.frame_results["fs"])):
+            transition = (self.frame_results["fs"][num], self.frame_results["fe"][num])
             print(str(transition) + "\t", end="")
         print()
