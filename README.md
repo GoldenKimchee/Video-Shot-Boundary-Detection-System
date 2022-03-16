@@ -1,5 +1,6 @@
 # Video Shot Boundary Detection System
-###Make sure to pull from the 'optimization' branch
+### Make sure to pull from the 'optimization' branch
+
 This application detects the start and end of each shot, regardless of if the shot starts/ends in a cut, or a gradual transition. It displays those shots in a user interface, where each shot can be played.
 
 ---
